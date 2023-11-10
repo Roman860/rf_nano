@@ -1,0 +1,79 @@
+#include <Arduino.h>
+#include <SPI.h>
+#include "Mirf.h"
+#include "nRF24L01.h"
+#include "MirfHardwareSpiDriver.h"
+
+Nrf24l Mirf = Nrf24l(10, 9); //10-CE 9-CSN
+int value;
+int value1, value2;
+
+void setup()
+{
+  Serial.begin(9600);
+
+  // NRF24L setup
+  Mirf.spi = &MirfHardwareSpi;
+  Mirf.init();
+  //Set your own address (sender address) using 5 characters
+  Mirf.setRADDR((byte *)"ABCDE");
+  Mirf.setTADDR((byte *)"FGHIJ"); //Set the transmiter address
+  Mirf.payload = sizeof(value1);
+  Mirf.channel = 10; //Set the channel used
+  Mirf.config();
+
+  ////////////
+
+  Serial.println("start");
+}
+
+const unsigned int pwm_freq = 10;                        // Hz
+const unsigned long pwm_total_time = 1000000 / pwm_freq; // in micro seconds
+
+enum pwm_proc_sm_type
+{
+  idle,
+  wait_for_new_val,
+  set_new_val
+};
+pwm_proc_sm_type pwm_proc_sm = idle;
+unsigned long start_time = 0;
+
+char *cstr = new char[128];
+int incomingByte = 0; // for incoming serial data
+void loop()
+{
+
+
+  // send data only when you receive data:
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    //incomingByte = Serial.read();
+    incomingByte = Serial.parseInt();
+    if (incomingByte > 0)
+    {
+      // say what you got:
+      Serial.print("I received: ");
+      Serial.println(incomingByte, DEC);
+
+
+      value1 = incomingByte;
+      
+      Mirf.send((byte *)&value1); //Send instructions, send random number value
+      Serial.print("Wait for sending.....");
+      while (Mirf.isSending())
+        delay(1); //Until you send successfully, exit the loop
+      Serial.print("value1 Send success:");
+      Serial.println(value1);
+      //delay(500);
+    }
+  }
+
+
+
+
+
+  
+
+
+}
